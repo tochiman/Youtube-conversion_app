@@ -17,8 +17,6 @@ import cursor_db
 
 #app_version
 app_ver='2.0ver'
-#changeworkdir
-#os.chdir('G:\マイドライブ\VS code\python(.py)\Youtube_conversion_app')
 #様々な関数をまとめたクラス
 class var_def():
     #webサイトに飛ぶための関数
