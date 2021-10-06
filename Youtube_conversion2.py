@@ -1,4 +1,3 @@
-import datetime
 import os
 import sqlite3
 import subprocess
@@ -29,17 +28,6 @@ class var_def():
         else:exit()
     def URL_delete(self):
         URL_Entry.delete(0,tk.END)
-    def time(self):
-        dt_now=datetime.datetime.now ( )
-        year=dt_now.year
-        month=dt_now.month
-        day=dt_now.day
-        hour=dt_now.hour
-        minute=dt_now.minute
-        nowtime=str(f"{year}/{month}/{day}-{hour}:{minute}")
-        return nowtime
-
-
 #スクリーンを設定もしくは作成する
 class var_def_scr():
     #メニューバーの作成
@@ -74,9 +62,18 @@ def Run():
         path_error = tkmsg.showerror(title='フォルダを指定',message='どこのフォルダを参照するか指定してください。')
         return
     try:
+        print(1)
+        import datetime
+        dt_now=datetime.datetime.now()
+        print(2)
+        cursor_db.history_insert(date=dt_now,ext=extension,url=url)
+        print(3)
         path_error_select=cursor_db.error_path_select()
+        print(4)
         Run_button['state']=tk.DISABLED #変換中に何度も押せないように無効化
-        os.chdir(path_error_select)
+        print(5)
+        print(6)
+        print(path_error_select)
         if  str_var.get() == 'mp3':
             outtmpl = '%(title)s.%(ext)s'
             down_dir = path + '/'
@@ -93,17 +90,21 @@ def Run():
                     Run_info = tkmsg.showinfo(title='実行完了',message='mp3として変換が完了しました。')
                     prog.destroy()
                 except Exception as e:
-                    import glob
-                    tkmsg.showerror("エラー","エラーが発生しました。詳しくはエラーテキストをご参照ください。")
-                    files = glob.glob("./*.txt")
-                    print(files)
-                    if len(files)==0:
-                        with open(f"{var_def.time()}-error1.txt","a") as f:
-                            f.write(str(e))
+                    if path_error_select=='ここにエラーテキストの出力先を指定してください':
+                        tkmsg.showerror("エラー","エラーテキストの出力先を指定していません。")
+                        prog.destroy()
                     else:
-                        filenum=int(files[-1].replace(f"{path_error_select}\\error","").replace(".txt",""))+1
-                        with open(f'{var_def.time()}-error{filenum}.txt',"a") as f:
-                            f.write(str(e))
+                        os.chdir(path_error_select)
+                        import glob
+                        tkmsg.showerror("エラー","エラーが発生しました。詳しくはエラーテキストをご参照ください。")
+                        files = glob.glob(f"{path_error_select}\error*.txt")
+                        if len(files)==0:
+                            with open(file="error1.txt",mode="w") as f:
+                                f.write(str(e))
+                        else:
+                            filenum=int(files[-1].replace(f"{path_error_select}\\error","").replace(".txt",""))+1
+                            with open(f'error{filenum}.txt',"w") as f:
+                                f.write(str(e))
                     p.stop()
                     prog.destroy()  
             prog = tk.Toplevel()
@@ -132,28 +133,35 @@ def Run():
                     Run_info = tkmsg.showinfo(title='実行完了',message='mp4として変換が完了しました。')
                     prog.destroy()
                 except Exception as e:
-                    import glob
-                    tkmsg.showerror("エラー","エラーが発生しました。詳しくはエラーテキストをご参照ください。")
-                    files = glob.glob(f"{path_error_select}\*.txt")
-                    if len(files)==0:
-                        with open("error1.txt","a") as f:
-                            f.write(str(e))
+                    if path_error_select=='ここにエラーテキストの出力先を指定してください':
+                        tkmsg.showerror("エラー","エラーテキストの出力先を指定していません。")
+                        prog.destroy()
                     else:
-                        filename=int(files[-1].replace(".\\error","").replace(".txt",""))+1
-                        with open(f'error{filename}.txt',"a") as f:
-                            f.write(str(e))
+                        os.chdir(path_error_select)
+                        import glob
+                        tkmsg.showerror("エラー","エラーが発生しました。詳しくはエラーテキストをご参照ください。")
+                        files = glob.glob(f"{path_error_select}\error*.txt")
+                        if len(files)==0:
+                            with open(file="error1.txt",mode="w") as f:
+                                f.write(str(e))
+                        else:
+                            filenum=int(files[-1].replace(f"{path_error_select}\\error","").replace(".txt",""))+1
+                            with open(f'error{filenum}.txt',"w") as f:
+                                f.write(str(e))
                     p.stop()
-                    prog.destroy()            
+                    prog.destroy()  
             prog = tk.Toplevel()
             var_def_scr.screen_size(screen=prog,width=350,height=60)
             prog.overrideredirect(True)
             p = ttk.Progressbar(prog,mode="indeterminate",maximum=100,length=300)
             p.pack(ipady=5)
             prog_text=ttk.Label(prog,text='ダウンロード中…')
+
             prog_text.pack()
             t = threading.Thread(target=down, kwargs={"p":p})  #スレッド立ち上げ
-            t.start()   #スレッド開始
+            t.start()   #スレッド開始    
     except Exception as e: 
+        print(e)       
         tkmsg.showerror(title='ダウンロードエラー',message='ダウンロード中にエラーが発生しました。詳しくは、ヘルプページを参照してください。')
     finally:
         URL_Entry.delete(0,tk.END)
@@ -227,11 +235,14 @@ def callbackFunk2():
     error_pass_get=path_Entry2.get()
     cursor_db.error_path_update(error_path=error_pass_get)
 def initialize():
-    opt.current(0)
-    mainmenu.configure(bg=cursor_db.color(name='赤'))
-    cursor_db.intial_color_update(opt_color="赤")
-    cursor_db.intial_install_update(install_place="ここにインストール先を指定してください。")
-    cursor_db.error_path_update(error_path="ここにエラーテキストの出力先を指定してください")
+    initialize_ask=tkmsg.askokcancel("初期化の確認","すべての設定を初期化しますか？")
+    if initialize_ask==True:
+        opt.current(0)
+        mainmenu.configure(bg=cursor_db.color(name='赤'))
+        cursor_db.intial_color_update(opt_color="赤")
+        cursor_db.intial_install_update(install_place="ここにインストール先を指定してください。")
+        cursor_db.error_path_update(error_path="ここにエラーテキストの出力先を指定してください")
+        cursor_db.history_delete()
 
 
 if __name__ == '__main__':
@@ -255,7 +266,7 @@ if __name__ == '__main__':
     title_label.grid(row=0,column=1)
     #メイン画面のボタン配置
     app_start_button=ttk.Button(main,text="アプリ起動",command=lambda:app_window.tkraise())
-    Conversion_his_button=ttk.Button(main,text="変換履歴",command=lambda:chan_his.tkraise())
+    Conversion_his_button=ttk.Button(main,text="変換履歴",command=lambda:chan_his.tkraise(),)
     chan_his_button=ttk.Button(main,text="アップデート情報",command=update_page)
     manual=ttk.Button(main,text='説明書',command=lambda:how_to.tkraise())
     help_button=ttk.Button(main,text="ヘルプ",command=lambda:help_page.tkraise())
@@ -380,19 +391,38 @@ if __name__ == '__main__':
     #変換履歴のフレーム作成
     chan_his=ttk.Frame(mainmenu)
     chan_his.grid(row=0,column=0,sticky="nsew",pady=20)
-    chan_his_tit=ttk.Label(chan_his, text='～変換履歴～',font=("",20)).grid(row=0,column=0)
-    scrollbar_frame1 = tk.Frame(chan_his)
-    scrollbar_frame1.grid(row=4,padx=10, pady=10)
-    listbox3 = tk.Listbox(scrollbar_frame1,width=90,height=17,font=("",13),justify='center')
-    history = [
-        
-    ]
-    for i in range(len(history)):
-        listbox3.insert(tk.END, str(history[i]))
-    listbox3.pack()
-    scroll_bar1 =tk.Scrollbar(scrollbar_frame1, command=listbox3.yview)
-    scroll_bar1.pack(side=tk.RIGHT, fill=tk.Y)
-    listbox3.config(yscrollcommand=scroll_bar1.set)
+    chan_his_tit=ttk.Label(chan_his, text='～変換履歴～',font=("",20)).grid(row=0,column=0,pady=10)
+    history_allreset=ttk.Button(chan_his,text='履歴の全削除',command=lambda:cursor_db.history_delete_ask())
+    history_allreset.grid(row=1,column=1,ipadx=15,sticky=tk.N)
+    chan_his_return=ttk.Button(chan_his,text='メインメニューに戻る',command=lambda:main.tkraise())
+    chan_his_return.grid(row=1,column=1,pady=10,sticky=tk.S)
+    dbname='main.db'
+    conn=sqlite3.connect(dbname)
+    cur=conn.cursor()
+    tuple_history="select * from history"
+    tree=ttk.Treeview(chan_his,height=16)
+    tree["columns"]=("ID","date","extension","URL")
+    tree["show"]="headings"
+    #各列の設定幅の設定
+    tree.column("ID",width=50)
+    tree.column("date",width=150)
+    tree.column("extension",width=45)
+    tree.column("URL",width=550)
+    #各列のヘッダー設定
+    tree.heading("ID",text="ID")
+    tree.heading("date",text="日付(y-M-d h:m:s.ms)")
+    tree.heading("extension",text="拡張子")
+    tree.heading("URL",text="URL")
+    i=0
+    for r in cur.execute(tuple_history):
+        tree.insert("","end",tags=i,values=r)
+        if i&2:
+            # tagが奇数(レコードは偶数)の場合のみ、背景色の設定
+            tree.tag_configure(i,background="red")
+        i+=1
+    tree.grid(row=1,column=0,pady=20,padx=30)
+    conn.commit()
+    conn.close()
 
     main.tkraise()  #メイン画面のフレームを一番上に持っていく
     mainmenu.mainloop()
